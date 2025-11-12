@@ -1,0 +1,503 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roots POS — Demo v2</title>
+<style>
+  :root{
+    --bg:#f6f3ef; --panel:#ffffff; --ink:#2b2b2b; --muted:#6a6a73;
+    --brand:#c97157; --accent:#9b7a5e; --ok:#1b8d52; --warn:#b76e00; --ring:0 0 0 3px rgba(201,113,87,.25);
+  }
+  [data-theme="dark"]{ --bg:#201e27; --panel:#292735; --ink:#f5f5f5; --muted:#b7b7c0; --brand:#f39a7d; --accent:#d8b899; --ok:#46d38a; --warn:#ffc86b; --ring:0 0 0 3px rgba(243,154,125,.35); }
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--ink); font:500 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+  header{display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06);
+          position:sticky; top:0; z-index:20; background:color-mix(in oklab, var(--bg) 86%, #fff 14%); backdrop-filter:saturate(120%) blur(6px);}
+  .logoWrap{display:flex; align-items:center; gap:10px;}
+  .logoWrap img{width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid rgba(0,0,0,.08);}
+  .brandTitle{font-weight:800; letter-spacing:.3px}
+  .sp{flex:1}
+  .btn{background:var(--brand); color:#fff; border:none; padding:9px 12px; border-radius:10px; cursor:pointer}
+  .btn.neutral{background:var(--panel); color:var(--ink); border:1px solid rgba(0,0,0,.12)}
+  .btn.ghost{background:#fff0; color:var(--brand); border:1px solid var(--brand)}
+  .container{display:grid; grid-template-columns:260px 1fr 400px; gap:14px; padding:16px; max-width:1400px; margin:0 auto}
+  nav{background:var(--panel); border-radius:14px; padding:10px; position:sticky; top:76px; height:fit-content; display:flex; flex-direction:column; gap:8px}
+  .tab{padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.08); background:#fff0; text-align:left; cursor:pointer}
+  .tab.active{background:var(--brand); color:#fff; border-color:transparent}
+  .view{background:var(--panel); border-radius:14px; padding:14px; min-height:520px}
+  .right{display:flex; flex-direction:column; gap:14px}
+  .card{background:var(--panel); border-radius:14px; padding:12px; border:1px solid rgba(0,0,0,.08)}
+  .title{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px}
+  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:rgba(0,0,0,.08)}
+  .muted{color:var(--muted)}
+  .grid{display:grid; gap:10px}
+  .grid.menu{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .item{border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:10px; background:#fff0; cursor:pointer}
+  .item:hover{box-shadow:var(--ring)}
+  .name{font-weight:700}
+  .options{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{border:1px solid rgba(0,0,0,.12); padding:6px 9px; border-radius:999px; background:#fff0; cursor:pointer}
+  .chip.active{background:var(--accent); color:#fff; border-color:transparent}
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .summary{display:grid; grid-template-columns:1fr auto; gap:6px; align-items:center; border-top:1px dashed rgba(0,0,0,.15); padding-top:8px; margin-top:8px}
+  .summary .total{font-size:20px; font-weight:900}
+  .row{display:flex; justify-content:space-between; gap:12px}
+  .table{width:100%; border-collapse:collapse; font-size:14px}
+  .table th,.table td{padding:8px; border-bottom:1px solid rgba(0,0,0,.08); text-align:left}
+  .receipt{background:color-mix(in oklab, var(--panel), #fff 8%); border:1px dashed rgba(0,0,0,.25); padding:10px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space:pre-wrap}
+  .hidden{display:none!important}
+  .imgwrap img{width:100%; border-radius:12px; border:1px solid rgba(0,0,0,.08)}
+  input[type="number"],input[type="text"],select{background:transparent; color:var(--ink); border:1px solid rgba(0,0,0,.1); padding:6px 8px; border-radius:10px}
+  label.switch{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  @media (max-width:1100px){ .container{grid-template-columns:1fr} nav{position:relative; top:0} .right{order:3} }
+</style>
+</head>
+<body data-theme="light">
+<header>
+  <div class="logoWrap">
+    <img src="B91CB7A8-4BB1-4364-9ED4-07DF64B9A40C.jpeg" alt="Roots logo">
+    <div class="brandTitle">ROOTS POS</div>
+  </div>
+  <div class="sp"></div>
+  <button id="btnTheme" class="btn neutral">Toggle Theme</button>
+  <button id="btnDemo" class="btn">Guided Demo</button>
+</header>
+
+<main class="container">
+  <nav>
+    <button class="tab active" data-target="order">Employee Order Screen</button>
+    <button class="tab" data-target="manager">Manager Dashboard</button>
+    <button class="tab" data-target="settings">Settings & Customization</button>
+  </nav>
+
+  <!-- ORDER VIEW -->
+  <section class="view" id="orderView">
+    <div class="title"><h2 style="margin:0">Menu</h2><span class="badge">Tap to add items</span></div>
+    <div class="grid menu" id="menu"></div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="title"><h3 style="margin:0">Item Options</h3><span class="muted" style="font-size:12px">applies to the selected item</span></div>
+      <div class="options" id="optSize"></div>
+      <div class="options" id="optMilk"></div>
+      <div class="options" id="optExtras"></div>
+      <div class="actions">
+        <button class="btn neutral" id="btnAddItem" disabled>Add to Order</button>
+        <button class="btn ghost" id="btnClearItem" disabled>Clear Selection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL: ORDER SUMMARY -->
+  <aside class="right">
+    <div class="card">
+      <div class="title"><h3 style="margin:0">Order Summary</h3><span class="badge" id="orderBadge">0 items</span></div>
+      <div id="orderList" class="grid"></div>
+      <div class="summary">
+        <span class="muted">Subtotal</span><span id="subtotal">$0.00</span>
+        <span class="muted">Tax</span><span id="tax">$0.00</span>
+        <span class="muted">Tip</span><span id="tip">$0.00</span>
+        <span class="total">Total</span><span class="total" id="total">$0.00</span>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnPayCard">Pay by Card</button>
+        <button class="btn neutral" id="btnPayCash">Pay Cash</button>
+        <button class="btn ghost" id="btnClearOrder">Clear Order</button>
+      </div>
+      <div id="receipt" class="receipt hidden"></div>
+    </div>
+    <div class="card imgwrap"><img src="0A2D3799-B562-473C-9721-F096D1B95664.jpeg" alt="Manager slide"></div>
+  </aside>
+
+  <!-- MANAGER VIEW -->
+  <section class="view hidden" id="managerView">
+    <div class="title"><h2 style="margin:0">Manager Dashboard</h2><span class="muted" style="font-size:12px">Live from session data</span></div>
+
+    <!-- KPI STRIP -->
+    <div class="grid" style="grid-template-columns: repeat(4,1fr);">
+      <div class="card"><div class="muted" style="font-size:12px">Today's Sales</div><div id="kpiSales" style="font-size:22px; font-weight:900">$0.00</div></div>
+      <div class="card"><div class="muted" style="font-size:12px">Orders</div><div id="kpiOrders" style="font-size:22px; font-weight:900">0</div></div>
+      <div class="card"><div class="muted" style="font-size:12px">Top Item</div><div id="kpiTop">—</div></div>
+      <div class="card"><div class="muted" style="font-size:12px">Avg Ticket</div><div id="kpiAvg" style="font-size:22px; font-weight:900">$0.00</div></div>
+    </div>
+
+    <!-- PRICE & INVENTORY -->
+    <div class="grid" style="grid-template-columns: 1.4fr 1fr; margin-top:12px;">
+      <div class="card">
+        <div class="title"><h3 style="margin:0">Quick Price Adjust</h3><span class="muted" style="font-size:12px">Updates the menu</span></div>
+        <div class="grid" style="grid-template-columns:2fr 1fr auto; gap:8px;">
+          <div><div class="muted" style="font-size:12px">Product</div><select id="priceItem" style="width:100%"></select></div>
+          <div><div class="muted" style="font-size:12px">New Price ($)</div><input id="priceValue" type="number" min="0" step="0.25" value="4" style="width:100%"></div>
+          <button class="btn" id="btnUpdatePrice" style="align-self:end">Update</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title"><h3 style="margin:0">Low Stock Alerts</h3><span class="badge">demo</span></div>
+        <table class="table" id="stockTable">
+          <thead><tr><th>Item</th><th>Qty</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Milk</td><td>5 L</td><td><span class="badge" style="background:var(--warn);color:#1b1b1b">Low</span></td></tr>
+            <tr><td>Croissants</td><td>12</td><td>OK</td></tr>
+            <tr><td>Espresso Beans</td><td>3 kg</td><td><span class="badge" style="background:var(--warn);color:#1b1b1b">Low</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EMPLOYEE PERFORMANCE + AI PROMOS -->
+    <div class="grid" style="grid-template-columns: 1fr 1fr; margin-top:12px;">
+      <div class="card">
+        <div class="title"><h3 style="margin:0">Employee Performance</h3><span class="muted" style="font-size:12px">today</span></div>
+        <table class="table" id="empTable">
+          <thead><tr><th>Name</th><th>Orders</th><th>Sales</th></tr></thead>
+          <tbody>
+            <tr><td>Lisa</td><td>18</td><td>$145.70</td></tr>
+            <tr><td>Mark</td><td>12</td><td>$101.20</td></tr>
+            <tr><td>Kim</td><td>9</td><td>$76.85</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="title"><h3 style="margin:0">AI Promo Ideas</h3><button class="btn neutral" id="btnAI">Generate</button></div>
+        <div class="muted" style="font-size:14px; margin-bottom:6px">Suggest giveaways, promotions, and specials based on sales mix, time of day, and inventory pressure.</div>
+        <ul id="aiList"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS VIEW -->
+  <section class="view hidden" id="settingsView">
+    <div class="title"><h2 style="margin:0">Settings & Customization</h2><span class="muted" style="font-size:12px">Feature flags & appearance</span></div>
+
+    <div class="grid" style="grid-template-columns: repeat(2,1fr);">
+      <div class="card"><label class="switch"><span>Enable Tips</span><input id="setTips" type="checkbox" checked></label></div>
+      <div class="card"><label class="switch"><span>Split Bill</span><input id="setSplit" type="checkbox"></label></div>
+      <div class="card"><label class="switch"><span>Loyalty Points</span><input id="setLoyalty" type="checkbox"></label></div>
+      <div class="card"><label class="switch"><span>Track Inventory</span><input id="setInventory" type="checkbox" checked></label></div>
+      <div class="card"><label class="switch"><span>Require Manager PIN for Price Changes</span><input id="setPin" type="checkbox"></label></div>
+      <div class="card">
+        <div>Tax Rate <small class="muted">(e.g., 0.0825)</small></div>
+        <input id="setTax" type="number" min="0" max="0.2" step="0.005" value="0.0825" style="width:100%; margin-top:6px">
+      </div>
+      <div class="card">
+        <div>Currency</div>
+        <select id="setCurrency" style="width:100%; margin-top:6px">
+          <option value="USD" selected>USD ($)</option>
+          <option value="EUR">EUR (€)</option>
+          <option value="GBP">GBP (£)</option>
+        </select>
+      </div>
+      <div class="card">
+        <div>Tip Presets (%)</div>
+        <input id="setTipsPreset" type="text" value="15,18,20" style="width:100%; margin-top:6px">
+        <div class="muted" style="font-size:12px">Comma-separated values shown on checkout.</div>
+      </div>
+      <div class="card">
+        <div>Happy Hour (Start–End)</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;">
+          <input id="setHHStart" type="time" value="14:00">
+          <input id="setHHEnd" type="time" value="16:00">
+        </div>
+        <div class="muted" style="font-size:12px">Applies 10% off drinks during window.</div>
+      </div>
+      <div class="card">
+        <div>Receipt Header</div>
+        <input id="setHeader" type="text" value="ROOTS COFFEE — THANK YOU" style="width:100%; margin-top:6px">
+      </div>
+      <div class="card">
+        <div>Receipt Footer</div>
+        <input id="setFooter" type="text" value="Follow us @roots" style="width:100%; margin-top:6px">
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:10px">
+      <button class="btn" id="btnApplySettings">Apply Settings</button>
+      <button class="btn ghost" id="btnReset">Reset Demo</button>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------- State & Data ----------
+const state = {
+  theme:"light",
+  taxRate:0.0825,
+  currency:"USD",
+  tipsEnabled:true,
+  tipsPreset:[0.15, 0.18, 0.20],
+  splitEnabled:false,
+  loyalty:false,
+  inventory:true,
+  managerPin:false,
+  cart:[],
+  selected:null,
+  salesToday:0,
+  orders:0,
+  avgTicket:0,
+  receiptHeader:"ROOTS COFFEE — THANK YOU",
+  receiptFooter:"Follow us @roots",
+  happyHour:{start:"14:00", end:"16:00"}
+};
+
+const menuData = [
+  { id:"latte", name:"Latte", price:4.0, category:"Coffee" },
+  { id:"espresso", name:"Espresso", price:3.0, category:"Coffee" },
+  { id:"americano", name:"Americano", price:3.5, category:"Coffee" },
+  { id:"cappuccino", name:"Cappuccino", price:4.25, category:"Coffee" },
+  { id:"coldbrew", name:"Cold Brew", price:4.5, category:"Coffee" },
+  { id:"tea", name:"Tea", price:2.5, category:"Drink" },
+  { id:"croissant", name:"Croissant", price:3.0, category:"Food" },
+  { id:"muffin", name:"Muffin", price:3.0, category:"Food" },
+  { id:"bagel", name:"Bagel", price:2.75, category:"Food" },
+];
+
+const sizeOptions = [
+  { id:"S", label:"Small", delta:0 }, { id:"M", label:"Medium +$0.50", delta:0.5 }, { id:"L", label:"Large +$1.00", delta:1.0 }
+];
+const milkOptions = [
+  { id:"WHOLE", label:"Whole", delta:0 }, { id:"OAT", label:"Oat +$0.50", delta:0.5 }, { id:"ALMOND", label:"Almond +$0.50", delta:0.5 }
+];
+const extraOptions = [
+  { id:"SHOT", label:"Extra Shot +$1.00", delta:1.0 }, { id:"VAN", label:"Vanilla +$0.50", delta:0.5 }, { id:"CARAMEL", label:"Caramel +$0.50", delta:0.5 }
+];
+
+const $ = (s, r=document)=>r.querySelector(s);
+const $$ = (s, r=document)=>[...r.querySelectorAll(s)];
+const symbol = curr => ({USD:"$",EUR:"€",GBP:"£"})[curr] || "$";
+const fmt = n => symbol(state.currency) + n.toFixed(2);
+
+// ---------- Renderers ----------
+function renderMenu(){
+  const menu = $("#menu"); menu.innerHTML="";
+  for(const item of menuData){
+    const b = document.createElement("button");
+    b.className="item";
+    b.innerHTML = `<div class="name">${item.name}</div><div class="muted" style="font-size:12px">${fmt(item.price)}</div>`;
+    b.onclick = ()=>selectItem(item);
+    menu.appendChild(b);
+  }
+  const sel = $("#priceItem"); sel.innerHTML="";
+  menuData.forEach(m=>{ const o=document.createElement("option"); o.value=m.id; o.textContent=`${m.name} (${fmt(m.price)})`; sel.appendChild(o); });
+}
+function renderChips(container, options, group){
+  container.innerHTML="";
+  for(const opt of options){
+    const c = document.createElement("button");
+    c.className="chip"; c.textContent=opt.label;
+    c.onclick = ()=>{
+      const was = c.classList.contains("active");
+      if(group!=="extras"){ $$(".chip", container).forEach(x=>x.classList.remove("active")); }
+      if(group==="extras"){ c.classList.toggle("active"); } else { if(!was) c.classList.add("active"); else c.classList.remove("active"); }
+      if(state.selected) state.selected[group] = getSelected(container, options, group);
+      syncAddButtons();
+    };
+    container.appendChild(c);
+  }
+}
+function getSelected(container, options, group){
+  const act = $$(".chip.active", container);
+  if(group==="extras"){ return act.map(btn => options[[...container.children].indexOf(btn)]); }
+  if(!act.length) return null; return options[[...container.children].indexOf(act[0])];
+}
+function selectItem(base){
+  state.selected = { base, size:null, milk:null, extras:[] };
+  renderChips($("#optSize"), sizeOptions, "size");
+  renderChips($("#optMilk"), milkOptions, "milk");
+  renderChips($("#optExtras"), extraOptions, "extras");
+  if(base.category!=="Food"){ $("#optSize .chip:nth-child(2)").click(); $("#optMilk .chip:nth-child(1)").click(); } // defaults
+  $("#btnClearItem").disabled = false;
+  syncAddButtons();
+}
+function clearSelected(){ state.selected=null; $("#optSize").innerHTML=""; $("#optMilk").innerHTML=""; $("#optExtras").innerHTML=""; $("#btnAddItem").disabled=true; $("#btnClearItem").disabled=true; }
+function calcItemPrice(sel){
+  let price = sel.base.price;
+  if(sel.size) price += sel.size.delta;
+  if(sel.milk) price += sel.milk.delta;
+  if(sel.extras && sel.extras.length) price += sel.extras.reduce((a,e)=>a+e.delta,0);
+  // happy hour discount for drinks
+  if(isHappyHour() && sel.base.category!=="Food"){ price *= 0.90; }
+  return price;
+}
+function syncAddButtons(){
+  const s = state.selected;
+  const ready = s && (s.base.category==="Food" || (s.size && s.milk));
+  $("#btnAddItem").disabled = !ready;
+}
+function addSelected(){
+  if(!state.selected) return;
+  const item = structuredClone(state.selected);
+  item.price = calcItemPrice(item);
+  state.cart.push(item);
+  clearSelected();
+  renderCart();
+}
+function removeItem(i){ state.cart.splice(i,1); renderCart(); }
+function renderCart(){
+  const list = $("#orderList"); list.innerHTML="";
+  state.cart.forEach((it,i)=>{
+    const extras = (it.extras||[]).map(e=>e.id).join("+");
+    const desc = [it.base.name, it.size?it.size.id:"", it.milk?it.milk.id:"", extras].filter(Boolean).join(" • ");
+    const row = document.createElement("div");
+    row.className="row"; row.title="Click to remove this item";
+    row.innerHTML = `<div>${desc}</div><div>${fmt(it.price)}</div>`;
+    row.onclick = ()=>removeItem(i);
+    list.appendChild(row);
+  });
+  const sub = state.cart.reduce((a,c)=>a+c.price,0);
+  $("#subtotal").textContent=fmt(sub);
+  const tx = sub*state.taxRate; $("#tax").textContent=fmt(tx);
+  const tip = state.tipsEnabled ? Math.round(sub*(state.tipsPreset[0])*100)/100 : 0;
+  $("#tip").textContent=fmt(tip);
+  const total = sub+tx+tip; $("#total").textContent=fmt(total);
+  $("#orderBadge").textContent = `${state.cart.length} item${state.cart.length!==1?"s":""}`;
+}
+function pay(method){
+  if(!state.cart.length) return;
+  const sub=state.cart.reduce((a,c)=>a+c.price,0), tx=sub*state.taxRate, tip=state.tipsEnabled?Math.round(sub*(state.tipsPreset[0])*100)/100:0, total=sub+tx+tip;
+  state.salesToday += total; state.orders += 1; state.avgTicket = state.salesToday / state.orders;
+  const header = state.receiptHeader;
+  const footer = state.receiptFooter;
+  $("#receipt").classList.remove("hidden");
+  $("#receipt").textContent = [
+    header,
+    "Items:",
+    ...state.cart.map(i=>`- ${i.base.name} ${i.size?i.size.id:""} ${i.milk?i.milk.id:""}  ${fmt(i.price)}`),
+    `Subtotal: ${fmt(sub)}`,
+    `Tax (${(state.taxRate*100).toFixed(2)}%): ${fmt(tx)}`,
+    `Tip: ${fmt(tip)}`,
+    `TOTAL: ${fmt(total)}`,
+    `Paid by: ${method}`,
+    footer
+  ].join("\n");
+  state.cart=[]; renderCart(); syncManagerKPIs();
+}
+function syncManagerKPIs(){
+  $("#kpiSales").textContent = fmt(state.salesToday);
+  $("#kpiOrders").textContent = state.orders.toString();
+  $("#kpiAvg").textContent = isFinite(state.avgTicket)?fmt(state.avgTicket):fmt(0);
+  const counts={};
+  const lines = $("#receipt").textContent.split("\n").filter(l=>l.startsWith("- "));
+  lines.forEach(l=>{ const name=l.split(" ")[1]; counts[name]=(counts[name]||0)+1; });
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  $("#kpiTop").textContent = top?`${top[0]} (${top[1]})`:"—";
+}
+
+// ---------- Settings ----------
+function applySettings(){
+  state.tipsEnabled = $("#setTips").checked;
+  state.splitEnabled = $("#setSplit").checked;
+  state.loyalty = $("#setLoyalty").checked;
+  state.inventory = $("#setInventory").checked;
+  state.managerPin = $("#setPin").checked;
+  state.taxRate = parseFloat($("#setTax").value)||0;
+  state.currency = $("#setCurrency").value;
+  state.tipsPreset = $("#setTipsPreset").value.split(",").map(s=>parseFloat(s.trim())/100).filter(n=>!isNaN(n) && n>0);
+  state.receiptHeader = $("#setHeader").value || state.receiptHeader;
+  state.receiptFooter = $("#setFooter").value || state.receiptFooter;
+  state.happyHour = { start: $("#setHHStart").value, end: $("#setHHEnd").value };
+  renderMenu(); renderCart();
+  alert("Settings applied.");
+}
+function resetDemo(){
+  state.theme="light"; document.body.dataset.theme="light";
+  state.taxRate=0.0825; state.currency="USD"; state.tipsEnabled=true; state.tipsPreset=[0.15,0.18,0.20];
+  state.splitEnabled=false; state.loyalty=false; state.inventory=true; state.managerPin=false;
+  state.cart=[]; state.selected=null; state.salesToday=0; state.orders=0; state.avgTicket=0;
+  state.receiptHeader="ROOTS COFFEE — THANK YOU"; state.receiptFooter="Follow us @roots";
+  state.happyHour={start:"14:00", end:"16:00"};
+  $("#setTips").checked=true; $("#setSplit").checked=false; $("#setLoyalty").checked=false; $("#setInventory").checked=true; $("#setPin").checked=false;
+  $("#setTax").value="0.0825"; $("#setCurrency").value="USD"; $("#setTipsPreset").value="15,18,20";
+  $("#setHeader").value=state.receiptHeader; $("#setFooter").value=state.receiptFooter;
+  $("#setHHStart").value=state.happyHour.start; $("#setHHEnd").value=state.happyHour.end;
+  renderMenu(); clearSelected(); renderCart(); switchView("order"); $("#receipt").classList.add("hidden");
+}
+
+// ---------- Manager Actions ----------
+function updatePrice(){
+  if(state.managerPin && !confirm("Manager PIN required (demo). Proceed?")) return;
+  const id = $("#priceItem").value;
+  const v = parseFloat($("#priceValue").value);
+  if(Number.isNaN(v)) return;
+  const f = menuData.find(m=>m.id===id);
+  if(f){ f.price = v; renderMenu(); renderCart(); alert(`Price updated for ${f.name}.`); }
+}
+function switchView(target){
+  $("#orderView").classList.toggle("hidden", target!=="order");
+  $("#managerView").classList.toggle("hidden", target!=="manager");
+  $("#settingsView").classList.toggle("hidden", target!=="settings");
+  $$(".tab").forEach(b=>b.classList.toggle("active", b.dataset.target===target));
+}
+
+// ---------- AI Promo Suggestion (rule-based demo) ----------
+function isHappyHour(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const t = pad(now.getHours()) + ":" + pad(now.getMinutes());
+  return t >= state.happyHour.start && t <= state.happyHour.end;
+}
+function generateAI(){
+  const ideas = [];
+  if(state.avgTicket && state.avgTicket < 6){
+    ideas.push("Bundle Deal: Latte + Croissant for "+fmt(5.50)+" during morning rush (raises avg ticket).");
+  }else{
+    ideas.push("Upsell Add‑Ons: Prompt for extra shot or flavor on every espresso drink.");
+  }
+  ideas.push("Move Beans: ‘Free flavor syrup with any Americano’ to rotate espresso bean inventory.");
+  ideas.push("Milk Low: Offer ‘$1 off Tea’ to shift away from milk drinks while restocking.");
+  if(isHappyHour()){
+    ideas.push("Happy Hour Special: 10% off all coffee; market as study hour (2–4pm).");
+  }else{
+    ideas.push("Pre‑Happy‑Hour Tease: ‘Happy Hour at "+state.happyHour.start+" — try Cold Brew for "+fmt(3.99)+"’.");
+  }
+  const top = $("#kpiTop").textContent;
+  if(top && top !== "—"){ ideas.push("Feature Board: ‘Top Seller: "+top.split(" ")[0]+"’ with a limited‑time BOGO‑50 coupon in app."); }
+  if(state.loyalty){ ideas.push("Loyalty Push: Double points on croissants before noon."); }
+  else{ ideas.push("Launch Loyalty: ‘Buy 7 coffees, get 1 free’ to retain repeat customers."); }
+  $("#aiList").innerHTML = ideas.map(i=>`<li>${i}</li>`).join("");
+}
+
+// ---------- Guided Demo ----------
+function runDemo(){
+  resetDemo();
+  const steps = [
+    ()=>switchView("settings"),
+    ()=>{ $("#setLoyalty").checked = true; $("#setHHStart").value="14:00"; $("#setHHEnd").value="16:00"; },
+    ()=>applySettings(),
+    ()=>switchView("manager"),
+    ()=>{ $("#priceItem").value="latte"; $("#priceValue").value="4.75"; },
+    ()=>updatePrice(),
+    ()=>switchView("order"),
+    ()=>{ $("#menu").children[0].click(); },
+    ()=>{ $("#optSize .chip:nth-child(3)").click(); $("#optMilk .chip:nth-child(2)").click(); $("#optExtras .chip:nth-child(1)").click(); },
+    ()=>$("#btnAddItem").click(),
+    ()=>{ $("#menu").children[6].click(); },
+    ()=>$("#btnAddItem").click(),
+    ()=>$("#btnPayCard").click(),
+    ()=>switchView("manager"),
+    ()=>generateAI()
+  ];
+  let i=0; const tick=()=>{ if(i>=steps.length) return; steps[i++](); setTimeout(tick, 700); }; tick();
+}
+
+// ---------- Bindings ----------
+$("#btnTheme").onclick = ()=>{ document.body.dataset.theme = (document.body.dataset.theme==="dark"?"light":"dark"); };
+$("#btnDemo").onclick = runDemo;
+$$(".tab").forEach(b=>b.onclick=()=>switchView(b.dataset.target));
+$("#btnAddItem").onclick = addSelected;
+$("#btnClearItem").onclick = clearSelected;
+$("#btnClearOrder").onclick = ()=>{ state.cart=[]; renderCart(); };
+$("#btnPayCard").onclick = ()=>pay("Card");
+$("#btnPayCash").onclick = ()=>pay("Cash");
+$("#btnApplySettings").onclick = applySettings;
+$("#btnReset").onclick = resetDemo;
+$("#btnUpdatePrice").onclick = updatePrice;
+$("#btnAI").onclick = generateAI;
+
+// Init
+renderMenu(); renderCart();
+</script>
+</body>
+</html>
